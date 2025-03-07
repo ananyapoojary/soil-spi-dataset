@@ -1,6 +1,6 @@
-Latitude,Longitude,Elevation,Soil pH,Organic Carbon,Clay Content
-12.91,77.59,909.0,N/A,N/A,N/A
-15.5,73.83,6.0,N/A,N/A,N/A
-13.08,80.27,4.0,N/A,N/A,N/A
-19.07,72.87,3.0,N/A,N/A,N/A
-22.57,88.36,12.0,N/A,N/A,N/A
+Latitude,Longitude,Elevation,Mean Temperature,Humidity,Rainfall,Soil pH,Organic Carbon,Nitrogen,Phosphorus,Potassium
+12.91,77.59,909.0,21.79,66.01,0.0,N/A,N/A,N/A,N/A,N/A
+15.5,73.83,6.0,27.49,64.66,0.0,N/A,N/A,N/A,N/A,N/A
+13.08,80.27,4.0,24.34,77.47,0.23,N/A,N/A,N/A,N/A,N/A
+19.07,72.87,3.0,24.68,60.93,0.0,N/A,N/A,N/A,N/A,N/A
+22.57,88.36,12.0,16.18,75.29,0.0,N/A,N/A,N/A,N/A,N/A
