@@ -1,57 +1,91 @@
+import time
 import requests
-import csv
+import pandas as pd
+import itertools
 
-# Function to fetch multiple soil properties in a single API request
-def get_soil_properties(lat, lon):
-    url = f"https://rest.isric.org/soilgrids/v2.0/properties/query?lon={lon}&lat={lat}&depths=0-5cm"
+# Define APIs
+POWER_API = "https://power.larc.nasa.gov/api/temporal/daily/point"
+ELEVATION_API = "https://api.open-elevation.com/api/v1/lookup"
 
-    response = requests.get(url)
-    results = {"Latitude": lat, "Longitude": lon}
+# Define India's latitude and longitude range
+LAT_MIN, LAT_MAX = 6.75, 35.50  # India's latitude range
+LON_MIN, LON_MAX = 68.10, 97.40  # India's longitude range
+RESOLUTION = 0.1  # Step size for grid
 
-    if response.status_code == 200:
+# Define floating-point range generator function
+def frange(start, stop, step):
+    """Generate floating point range values."""
+    while start <= stop:
+        yield round(start, 2)
+        start += step
+
+# Generate coordinate pairs
+coordinates = list(itertools.product(
+    [round(lat, 2) for lat in frange(LAT_MIN, LAT_MAX, RESOLUTION)],
+    [round(lon, 2) for lon in frange(LON_MIN, LON_MAX, RESOLUTION)]
+))
+
+def fetch_data(url, params, retries=3, backoff_factor=2):
+    """Fetch API data with retries."""
+    for attempt in range(retries):
         try:
-            data = response.json()
-            layers = data.get("properties", {}).get("layers", [])
-            
-            for layer in layers:
-                property_name = layer.get("name", "Unknown")
-                depths = layer.get("depths", [])
-                
-                if depths:
-                    results[property_name] = depths[0].get("values", {}).get("mean", "N/A")
-                else:
-                    results[property_name] = "N/A"
-        except Exception as e:
-            results["Error"] = f"Parsing error: {str(e)}"
-    else:
-        results["Error"] = f"API request failed with status code {response.status_code}"
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 429:
+                wait_time = backoff_factor ** attempt
+                print(f"Rate limit exceeded. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                print(f"API error ({response.status_code}): {response.text}")
+                break
+        except requests.RequestException as e:
+            print(f"Error fetching data from {url}: {e}")
+            break
+    return None
 
-    return results
+def get_elevation(lat, lon):
+    """Fetch elevation data."""
+    params = {"locations": f"{lat},{lon}"}
+    result = fetch_data(ELEVATION_API, params)
+    return result["results"][0]["elevation"] if result else "N/A"
 
-# Example locations
-locations = [
-    {"lat": 6.5, "lon": -69.2},
-    {"lat": 39.1, "lon": -67.3},
-    {"lat": 20.5, "lon": 78.9}  # Add more locations if needed
-]
+def get_climate_data(lat, lon):
+    """Fetch climate data."""
+    params = {
+        "parameters": "T2M,RH2M,PRECTOTCORR",
+        "community": "RE",
+        "longitude": lon,
+        "latitude": lat,
+        "format": "JSON",
+        "start": "20240101",
+        "end": "20240101"
+    }
+    result = fetch_data(POWER_API, params)
+    if result and "properties" in result:
+        data = result["properties"]["parameter"]
+        return {
+            "Mean Temperature": data.get("T2M", {}).get("20240101", "N/A"),
+            "Humidity": data.get("RH2M", {}).get("20240101", "N/A"),
+            "Rainfall": data.get("PRECTOTCORR", {}).get("20240101", "N/A")
+        }
+    return {"Mean Temperature": "N/A", "Humidity": "N/A", "Rainfall": "N/A"}
 
-# Fetch data for all locations
-soil_data = [get_soil_properties(**loc) for loc in locations]
+# Generate dataset
+dataset = []
+for i, (lat, lon) in enumerate(coordinates, start=1):
+    print(f"Processing {i}/{len(coordinates)}: Lat {lat}, Lon {lon}")
+    elevation = get_elevation(lat, lon)
+    climate_data = get_climate_data(lat, lon)
+    dataset.append({
+        "Latitude": lat,
+        "Longitude": lon,
+        "Elevation": elevation,
+        **climate_data
+    })
 
-# Dynamically determine all field names from the collected data
-all_fieldnames = set()
-for entry in soil_data:
-    all_fieldnames.update(entry.keys())
-all_fieldnames = sorted(all_fieldnames)  # Sorting for consistency
-
-# CSV file path
-csv_filename = "soil_data.csv"
-
-# Writing to CSV
-with open(csv_filename, mode="w", newline="") as file:
-    writer = csv.DictWriter(file, fieldnames=all_fieldnames)
-
-    writer.writeheader()
-    writer.writerows(soil_data)
-
-print(f"Soil data has been saved to {csv_filename}")
+# Save dataset as CSV
+output_file = "india_soil_dataset.csv"
+df = pd.DataFrame(dataset)
+df.to_csv(output_file, index=False)
+print(f"✅ Dataset saved as {output_file}")
