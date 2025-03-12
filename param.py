@@ -6,7 +6,7 @@ import itertools
 from tqdm import tqdm
 
 # Define India's latitude and longitude range
-LAT_MIN, LAT_MAX = 8, 14  # Latitude range
+LAT_MIN, LAT_MAX = 8, 8.1  # Latitude range
 LON_MIN, LON_MAX = 68, 98  # Longitude range
 RESOLUTION = 0.1  # Step size for grid
 
@@ -63,7 +63,9 @@ def get_soil_properties(lat, lon, max_retries=5):
 # Fetch data
 soil_data = []
 for lat, lon in tqdm(coordinates, desc="Fetching Soil Data", unit="location"):
+    print(f"Fetching data for Latitude: {lat}, Longitude: {lon}")  # Log each request
     soil_data.append(get_soil_properties(lat, lon))
+
 
 # Extract all field names dynamically
 all_fields = set()
