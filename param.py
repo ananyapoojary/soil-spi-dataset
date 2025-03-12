@@ -2,7 +2,26 @@ import requests
 import csv
 import time
 import random
+import itertools
 from tqdm import tqdm
+
+# Define India's latitude and longitude range
+LAT_MIN, LAT_MAX = 8, 14  # Latitude range
+LON_MIN, LON_MAX = 68, 98  # Longitude range
+RESOLUTION = 0.1  # Step size for grid
+
+# Define floating-point range generator function
+def frange(start, stop, step):
+    """Generate floating point range values."""
+    while start <= stop:
+        yield round(start, 2)
+        start += step
+
+# Generate coordinate pairs
+coordinates = list(itertools.product(
+    [round(lat, 2) for lat in frange(LAT_MIN, LAT_MAX, RESOLUTION)],
+    [round(lon, 2) for lon in frange(LON_MIN, LON_MAX, RESOLUTION)]
+))
 
 def get_soil_properties(lat, lon, max_retries=5):
     url = f"https://rest.isric.org/soilgrids/v2.0/properties/query?lon={lon}&lat={lat}&depths=0-5cm&properties=phh2o,soc,bdod,clay,sand,silt,cec,ocd,nitrogen,wv0010,wv0033,wv1500,cfvo,ocs"
@@ -41,19 +60,10 @@ def get_soil_properties(lat, lon, max_retries=5):
 
     return {"Latitude": lat, "Longitude": lon, "Error": "No data available"}
 
-# Example locations
-locations = [
-    {"lat": 6, "lon": 68},
-    {"lat": 9.8, "lon": 77.5},
-    {"lat": 6.9, "lon": 68.2},
-    {"lat": 6.2, "lon": 69.3},
-    {"lat": 7.3, "lon": 69.4},
-]
-
 # Fetch data
 soil_data = []
-for loc in tqdm(locations, desc="Fetching Soil Data", unit="location"):
-    soil_data.append(get_soil_properties(**loc))
+for lat, lon in tqdm(coordinates, desc="Fetching Soil Data", unit="location"):
+    soil_data.append(get_soil_properties(lat, lon))
 
 # Extract all field names dynamically
 all_fields = set()
@@ -61,7 +71,7 @@ for entry in soil_data:
     all_fields.update(entry.keys())
 
 # Save to CSV
-csv_filename = "soil_data7.csv"
+csv_filename = "final_param1.csv"
 with open(csv_filename, mode="w", newline="") as file:
     writer = csv.DictWriter(file, fieldnames=list(all_fields))
     writer.writeheader()
