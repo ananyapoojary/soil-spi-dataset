@@ -8,7 +8,7 @@ POWER_API = "https://power.larc.nasa.gov/api/temporal/daily/point"
 ELEVATION_API = "https://api.open-elevation.com/api/v1/lookup"
 
 # Define India's latitude and longitude range
-LAT_MIN, LAT_MAX = 8, 14  # India's latitude range
+LAT_MIN, LAT_MAX = 14, 22  # India's latitude range
 LON_MIN, LON_MAX = 68, 98 # India's longitude range
 RESOLUTION = 0.1  # Step size for grid
 
@@ -85,7 +85,7 @@ for i, (lat, lon) in enumerate(coordinates, start=1):
     })
 
 # Save dataset as CSV
-output_file = "final part 1.csv"
+output_file = "final part 2.csv"
 df = pd.DataFrame(dataset)
 df.to_csv(output_file, index=False)
 print(f"✅ Dataset saved as {output_file}")
