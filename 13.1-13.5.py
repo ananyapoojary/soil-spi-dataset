@@ -2,19 +2,27 @@ import requests
 import csv
 import time
 import random
+import itertools
 from tqdm import tqdm
 
-# List of specific coordinates
-coordinates = [
-(8, 79.9), (8, 80), (8, 80.1), (8, 80.2), (8, 80.3), (8, 80.4), (8, 80.5), (8, 80.6), (8, 80.7), (8, 80.8),  
-(8, 80.9), (8, 81), (8, 81.1), (8, 81.2), (8, 81.3), (8, 81.4), (8, 81.5), (8, 93.4), (8, 93.5),  
-(8.1, 77.5), (8.1, 79.9), (8.1, 80), (8.1, 80.1), (8.1, 80.2), (8.1, 80.3), (8.1, 80.4), (8.1, 80.5), (8.1, 80.6), (8.1, 80.7),  
-(8.1, 80.8), (8.1, 80.9), (8.1, 81), (8.1, 81.1), (8.1, 81.2), (8.1, 81.3), (8.1, 81.4), (8.1, 93.5),  
-(8.2, 77.3), (8.2, 77.4), (8.2, 77.5), (8.2, 77.6), (8.2, 77.7), (8.2, 79.7), (8.2, 79.9), (8.2, 80), (8.2, 80.1), (8.2, 80.2),  
-(8.2, 80.3), (8.2, 80.4), (8.2, 80.5), (8.2, 80.6), (8.2, 80.7), (8.2, 80.8), (8.2, 80.9), (8.2, 81), (8.2, 81.1), (8.2, 81.2),  
-(8.2, 81.3), (8.2, 81.4), (8.2, 93.2), (8.2, 93.5)
+# Define India's latitude and longitude range
+LAT_MIN, LAT_MAX = 13.1, 13.5  # Latitude range
+LON_MIN, LON_MAX = 74.5, 93# Longitude range
 
-]
+RESOLUTION = 0.1  # Step size for grid
+
+# Define floating-point range generator function
+def frange(start, stop, step):
+    """Generate floating point range values."""
+    while start <= stop:
+        yield round(start, 2)
+        start += step
+
+# Generate coordinate pairs
+coordinates = list(itertools.product(
+    [round(lat, 2) for lat in frange(LAT_MIN, LAT_MAX, RESOLUTION)],
+    [round(lon, 2) for lon in frange(LON_MIN, LON_MAX, RESOLUTION)]
+))
 
 def get_soil_properties(lat, lon, max_retries=5):
     url = f"https://rest.isric.org/soilgrids/v2.0/properties/query?lon={lon}&lat={lat}&depths=0-5cm&properties=phh2o,soc,bdod,clay,sand,silt,cec,ocd,nitrogen,wv0010,wv0033,wv1500,cfvo,ocs"
@@ -33,10 +41,11 @@ def get_soil_properties(lat, lon, max_retries=5):
                     property_name = layer.get("name", "Unknown")
                     depths = layer.get("depths", [])
 
+                    # Ensure depths and values exist
                     if depths and "values" in depths[0] and "mean" in depths[0]["values"]:
                         results[property_name] = depths[0]["values"]["mean"]
                     else:
-                        results[property_name] = "N/A"  
+                        results[property_name] = "N/A"  # Set "N/A" explicitly if data is missing
 
                 return results
 
@@ -55,8 +64,9 @@ def get_soil_properties(lat, lon, max_retries=5):
 # Fetch data
 soil_data = []
 for lat, lon in tqdm(coordinates, desc="Fetching Soil Data", unit="location"):
-    print(f"Fetching data for Latitude: {lat}, Longitude: {lon}")
+    print(f"Fetching data for Latitude: {lat}, Longitude: {lon}")  # Log each request
     soil_data.append(get_soil_properties(lat, lon))
+
 
 # Extract all field names dynamically
 all_fields = set()
@@ -64,7 +74,7 @@ for entry in soil_data:
     all_fields.update(entry.keys())
 
 # Save to CSV
-csv_filename = "b1.csv"
+csv_filename = "b13.csv"
 with open(csv_filename, mode="w", newline="") as file:
     writer = csv.DictWriter(file, fieldnames=list(all_fields))
     writer.writeheader()
