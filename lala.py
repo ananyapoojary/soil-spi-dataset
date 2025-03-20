@@ -6,8 +6,9 @@ import itertools
 from tqdm import tqdm
 
 # Define India's latitude and longitude range
-LAT_MIN, LAT_MAX = 8.1, 8.2  # Latitude range
-LON_MIN, LON_MAX = 68, 98  # Longitude range
+LAT_MIN, LAT_MAX = 12.1, 12.2  # Latitude range
+LON_MIN, LON_MAX = 76, 76.5# Longitude range
+
 RESOLUTION = 0.1  # Step size for grid
 
 # Define floating-point range generator function
@@ -73,7 +74,7 @@ for entry in soil_data:
     all_fields.update(entry.keys())
 
 # Save to CSV
-csv_filename = "final_param2.csv"
+csv_filename = "lala.csv"
 with open(csv_filename, mode="w", newline="") as file:
     writer = csv.DictWriter(file, fieldnames=list(all_fields))
     writer.writeheader()
