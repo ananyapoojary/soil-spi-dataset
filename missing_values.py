@@ -24,7 +24,7 @@ print(f"\n🔎 Columns with missing values: {missing_cols}")
 # Split dataset into complete and missing rows
 complete_df = df.dropna(subset=missing_cols)
 missing_df = df[df.isnull().any(axis=1)]
-
+f
 print(f"✅ Complete rows: {len(complete_df)}")
 print(f"❌ Missing rows: {len(missing_df)}")
 
